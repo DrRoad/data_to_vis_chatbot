@@ -1,6 +1,6 @@
-# Data to VIS Chatbot
+# DataChat
 
-Data to VIS Chatbot is a data analysis and visualization tool, utilizing OpenAI's ChatGPT to transform natural language prompts into data visualizations. This chatbot is built upon Paula Maddigan and Teo Susnjak's work Chat2VIS (https://ieeexplore.ieee.org/document/10121440). Reflecting upon their work, this app aims to provide conversational interface, code explanations and reasoning behind the choice of a specific plot type. 
+DataChat is a data analysis and visualization tool, utilizing OpenAI's ChatGPT to transform natural language prompts into data insights and visualizations. This chatbot is built upon Paula Maddigan and Teo Susnjak's work Chat2VIS (https://ieeexplore.ieee.org/document/10121440). Reflecting upon their work, this app aims to provide conversational interface, code explanations and reasoning behind the choice of a specific plot type. 
 
 
 ## Main Features
@@ -26,6 +26,6 @@ Data to VIS Chatbot is a data analysis and visualization tool, utilizing OpenAI'
 - **API Access**: A paid ChatGPT4 account API key is required for utilizing the ChatGPT functionalities.
 
 ## How It Works
-- **vis_chatbot.py**: The main file of the application. It handles user interactions, manages datasets, and communicates with ChatGPT-4 API to generate and describe plots.
+- **app.py**: The main file of the application. It handles user interactions, manages datasets, and communicates with ChatGPT-4 API to generate and describe plots.
 - **helpers.py**: A support module. It contains utility functions for plot identification, response formatting, and interaction with the ChatGPT API.
 

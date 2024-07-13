@@ -63,7 +63,7 @@ with st.sidebar:
         st.error("File failed to load. Please select a valid CSV file.")
         print("File failed to load.\n" + str(e))
     # Radio buttons for dataset choice
-    chosen_dataset = dataset_container.radio(":bar_chart: Choose your data:",datasets.keys(),index=index_no)
+    chosen_dataset = dataset_container.radio(":bar_chart: Choose an example data:",datasets.keys(),index=index_no)
 
     st.sidebar.markdown("---")
     st.sidebar.markdown("### Prompt Guide")
@@ -72,7 +72,7 @@ with st.sidebar:
     st.sidebar.markdown("- 📖 Say \"Describe it\" to have chatgpt describe the plot it just generated for you")
 
 
-st.title("💬 Data to VIS Chatbot")
+st.title("💬 DataChat")
 st.caption("An interactive chatbot designed to conduct data analysis and create data visualizations from natural language")
 
 # Initial message from chatgpt
