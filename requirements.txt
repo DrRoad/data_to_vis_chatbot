@@ -1,0 +1,4 @@
+matplotlib==3.8.2
+openai==0.28.0
+streamlit
+pandas
