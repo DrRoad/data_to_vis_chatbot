@@ -18,7 +18,7 @@ firebase_api_key = st.secrets["firebase_api_key"]
 # Initialize Firebase
 def initialize_firebase():
     if not firebase_admin._apps:
-        cred = credentials.Certificate(firebase_service_account_key)
+        cred = credentials.Certificate("data-to-vis-chatbot-firebase-adminsdk-wsh65-0dfb097c6f.json")
         firebase_admin.initialize_app(cred)
 
 initialize_firebase()
