@@ -64,7 +64,22 @@ def load_datasets():
         "Energy Production": pd.read_csv("energy_production.csv")
     }
     return datasets
-
+    
+def execute_and_capture_plot(code):
+    try:
+        exec(code, globals())
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        plt.close()
+        buf.seek(0)
+        return buf
+    except SyntaxError as e:
+        st.error(f"Failed to generate plot: {e}")
+        return None
+    except Exception as e:
+        st.error(f"Failed to generate plot: {str(e)}")
+        return None
+        
 # Authentication
 if not st.session_state["auth_status"]:
     auth_mode = st.sidebar.radio("Authentication", ["Sign Up", "Sign In"])
