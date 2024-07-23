@@ -1,99 +1,59 @@
-# demo_app.py
 import streamlit as st
 import pandas as pd
+import sqlite3
 import io
 import matplotlib.pyplot as plt
 from helpers import *
-import firebase_admin
-from firebase_admin import credentials, auth, firestore
-import requests
-import json
 
-# Load secrets
-firebase_service_account_key = json.loads(st.secrets["firebase_service_account_key"])
-firebase_api_key = st.secrets["firebase_api_key"]
+# Initialize SQLite database
+conn = sqlite3.connect('users.db')
+c = conn.cursor()
+c.execute('''
+    CREATE TABLE IF NOT EXISTS users (
+        email TEXT PRIMARY KEY,
+        password TEXT NOT NULL
+    )
+''')
+conn.commit()
 
-# Initialize Firebase
-def initialize_firebase():
-    if not firebase_admin._apps:
-        cred = credentials.Certificate("data-to-vis-chatbot-firebase-adminsdk-wsh65-0dfb097c6f.json")
-        firebase_admin.initialize_app(cred)
-
-initialize_firebase()
-db = firestore.client()
-
-def execute_and_capture_plot(code):
+def add_user(email, password):
     try:
-        exec(code, globals())
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png')
-        plt.close()
-        buf.seek(0)
-        return buf
-    except Exception as e:
-        st.error(f"Failed to generate plot: {str(e)}")
-        return None
+        c.execute("INSERT INTO users (email, password) VALUES (?, ?)", (email, password))
+        conn.commit()
+    except sqlite3.IntegrityError:
+        st.error("User already exists. Please sign in.")
+
+def authenticate_user(email, password):
+    c.execute("SELECT * FROM users WHERE email = ? AND password = ?", (email, password))
+    return c.fetchone()
+
+# Initialize in-memory session state
+if "auth_status" not in st.session_state:
+    st.session_state["auth_status"] = False
+if "user_email" not in st.session_state:
+    st.session_state["user_email"] = ""
 
 def sign_up(email, password):
-    try:
-        user = auth.create_user(email=email, password=password)
-        return user.uid
-    except Exception as e:
-        st.error(f"Error creating user: {e}")
-        return None
+    add_user(email, password)
+    st.success("Sign Up Successful. Please Sign In.")
 
 def sign_in(email, password):
-    try:
-        user = auth.get_user_by_email(email)
-        custom_token = auth.create_custom_token(user.uid)
-        # Exchange the custom token for an ID token
-        url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key={firebase_api_key}"
-        payload = {
-            "token": custom_token.decode('utf-8'),
-            "returnSecureToken": True
-        }
-        response = requests.post(url, json=payload)
-        id_token = response.json().get('idToken')
-        return id_token
-    except Exception as e:
-        st.error(f"Error signing in: {e}")
-        return None
+    user = authenticate_user(email, password)
+    if user:
+        st.session_state["auth_status"] = True
+        st.session_state["user_email"] = email
+        st.success("Sign In Successful.")
+        return True
+    else:
+        st.error("Invalid email or password.")
+        return False
 
 def sign_out():
-    st.session_state["auth_token"] = None
+    st.session_state["auth_status"] = False
+    st.session_state["user_email"] = ""
 
-# Authentication
-if "auth_token" not in st.session_state:
-    st.session_state["auth_token"] = None
-
-if st.session_state["auth_token"] is None:
-    auth_mode = st.sidebar.radio("Authentication", ["Sign Up", "Sign In"])
-
-    if auth_mode == "Sign Up":
-        email = st.sidebar.text_input("Email")
-        password = st.sidebar.text_input("Password", type="password")
-        if st.sidebar.button("Sign Up"):
-            user_id = sign_up(email, password)
-            if user_id:
-                st.sidebar.success("Sign Up Successful. Please Sign In.")
-    elif auth_mode == "Sign In":
-        email = st.sidebar.text_input("Email")
-        password = st.sidebar.text_input("Password", type="password")
-        if st.sidebar.button("Sign In"):
-            auth_token = sign_in(email, password)
-            if auth_token:
-                st.session_state["auth_token"] = auth_token
-                st.experimental_rerun()
-else:
-    st.sidebar.write("Signed in")
-    if st.sidebar.button("Sign Out"):
-        sign_out()
-        st.experimental_rerun()
-
-    with st.sidebar:
-        openai_api_key = st.text_input("Please Input OpenAI API Key below:", key="chatbot_api_key", type="password")
-        chosen_dataset = st.selectbox(":bar_chart: Choose an example data:", ["Movies", "Housing", "Cars", "Colleges", "Customers & Products", "Department Store", "Energy Production"])
-
+# Load example datasets
+def load_datasets():
     datasets = {
         "Movies": pd.read_csv("movies.csv"),
         "Housing": pd.read_csv("housing.csv"),
@@ -101,10 +61,35 @@ else:
         "Colleges": pd.read_csv("colleges.csv"),
         "Customers & Products": pd.read_csv("customers_and_products_contacts.csv"),
         "Department Store": pd.read_csv("department_store.csv"),
-        "Energy Production": pd.read_csv("energy_production.csv"),
+        "Energy Production": pd.read_csv("energy_production.csv")
     }
+    return datasets
 
-    st.title("💬 Data to Visualization Chatbot Demo")
+# Authentication
+if not st.session_state["auth_status"]:
+    auth_mode = st.sidebar.radio("Authentication", ["Sign Up", "Sign In"])
+
+    if auth_mode == "Sign Up":
+        email = st.sidebar.text_input("Email")
+        password = st.sidebar.text_input("Password", type="password")
+        if st.sidebar.button("Sign Up"):
+            sign_up(email, password)
+    elif auth_mode == "Sign In":
+        email = st.sidebar.text_input("Email")
+        password = st.sidebar.text_input("Password", type="password")
+        if st.sidebar.button("Sign In"):
+            if sign_in(email, password):
+                st.experimental_rerun()
+else:
+    st.sidebar.write(f"Signed in as {st.session_state['user_email']}")
+    if st.sidebar.button("Sign Out"):
+        sign_out()
+        st.experimental_rerun()
+
+    with st.sidebar:
+        openai_api_key = st.text_input("Please Input OpenAI API Key below:", key="chatbot_api_key", type="password")
+
+    st.title("💬 DataChat Demo")
     st.caption("An interactive chatbot designed to conduct data analysis and create data visualizations from natural language")
 
     if "messages" not in st.session_state:
@@ -124,11 +109,12 @@ else:
     if "vis_code" not in st.session_state:
         st.session_state["vis_code"] = ""
 
+    datasets = load_datasets()
+    chosen_dataset = st.selectbox(":bar_chart: Choose an example data:", list(datasets.keys()))
+
     if prompt := st.chat_input():
         if not openai_api_key:
             st.error("Please add your OpenAI API key to continue.")
-        elif chosen_dataset is None:
-            st.error("Please select a dataset before entering a prompt.")
         else:
             st.session_state.messages.append({"role": "user", "content": prompt})
             st.chat_message("user").write(prompt)
@@ -168,4 +154,3 @@ else:
     if chosen_dataset:
         st.subheader(f"{chosen_dataset} Dataset")
         st.dataframe(datasets[chosen_dataset], hide_index=True)
-
