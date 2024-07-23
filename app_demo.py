@@ -32,6 +32,10 @@ if "auth_status" not in st.session_state:
     st.session_state["auth_status"] = False
 if "user_email" not in st.session_state:
     st.session_state["user_email"] = ""
+if "messages" not in st.session_state:
+    st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
+if "vis_code" not in st.session_state:
+    st.session_state["vis_code"] = ""
 
 def sign_up(email, password):
     add_user(email, password)
@@ -51,6 +55,8 @@ def sign_in(email, password):
 def sign_out():
     st.session_state["auth_status"] = False
     st.session_state["user_email"] = ""
+    st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
+    st.session_state["vis_code"] = ""
 
 # Load example datasets
 def load_datasets():
@@ -64,7 +70,7 @@ def load_datasets():
         "Energy Production": pd.read_csv("energy_production.csv")
     }
     return datasets
-    
+
 def execute_and_capture_plot(code):
     try:
         exec(code, globals())
@@ -78,8 +84,9 @@ def execute_and_capture_plot(code):
         return None
     except Exception as e:
         st.error(f"Failed to generate plot: {str(e)}")
-        return None
+        return None   
         
+
 # Authentication
 if not st.session_state["auth_status"]:
     auth_mode = st.sidebar.radio("Authentication", ["Sign Up", "Sign In"])
@@ -107,9 +114,6 @@ else:
     st.title("💬 DataChat Demo")
     st.caption("An interactive chatbot designed to conduct data analysis and create data visualizations from natural language")
 
-    if "messages" not in st.session_state:
-        st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
-
     for msg in st.session_state.messages:
         st.chat_message(msg["role"]).write(msg["content"])
         if "image" in msg:
@@ -120,9 +124,6 @@ else:
     st.markdown("- 🗒️ Start with \"Explore:\" to get suggested prompt from ChatGPT")
     st.markdown("- 📉 Start with \"Show:\" to have ChatGPT generate a plot based on your entered prompt")
     st.markdown("- 📖 Say \"Describe it\" to have ChatGPT describe the plot it just generated for you")
-
-    if "vis_code" not in st.session_state:
-        st.session_state["vis_code"] = ""
 
     datasets = load_datasets()
     chosen_dataset = st.selectbox(":bar_chart: Choose an example data:", list(datasets.keys()))
