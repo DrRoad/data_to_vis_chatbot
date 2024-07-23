@@ -94,6 +94,21 @@ def load_user_dataset(uploaded_file):
         return pd.read_csv(uploaded_file)
     return None
 
+def execute_and_capture_plot(code):
+    try:
+        exec(code, globals())
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        plt.close()
+        buf.seek(0)
+        return buf
+    except SyntaxError as e:
+        st.error(f"Failed to generate plot: {e}")
+        return None
+    except Exception as e:
+        st.error(f"Failed to generate plot: {str(e)}")
+        return None   
+        
 # Authentication
 if not st.session_state["auth_status"]:
     auth_mode = st.sidebar.radio("Authentication", ["Sign Up", "Sign In"])
